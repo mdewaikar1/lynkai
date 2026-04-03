@@ -3,171 +3,894 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LynkAI — AI Stock Analysis</title>
+  <title>LynkAI — Institutional-Quality Stock Analysis</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    :root{
-      --bg:#f5f2eb;--ink:#1a1a18;--paper:#fffef9;--rule:#d4ccb8;
-      --green:#1a6b3a;--green-bg:#eaf4ee;--red:#8b1a1a;--red-bg:#f9eaea;
-      --gold:#9a7a2a;--gold-bg:#faf5e4;--muted:#7a7060;
-      --accent:#2a4a8a;--accent-bg:#eaeefc;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg2: #f4f4f5;
+      --ink: #09090b;
+      --ink2: #52525b;
+      --ink3: #a1a1aa;
+      --border: #e4e4e7;
+      --surface: #ffffff;
+      --indigo: #635bff;
+      --indigo-light: #ebe9fe;
+      --green: #16a34a;
+      --green-light: #dcfce7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.08);
+      --radius: 8px;
+      --radius-lg: 12px;
     }
-    body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
-    header{background:var(--ink);color:var(--bg);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
-    .logo{font-family:'DM Serif Display',serif;font-size:20px;}
-    .logo em{color:#c8a84a;font-style:normal;}
-    .tagline{font-family:'JetBrains Mono',monospace;font-size:10px;color:#888;letter-spacing:.1em;text-transform:uppercase;}
-    main{flex:1;max-width:860px;margin:0 auto;width:100%;padding:32px 20px 48px;display:flex;flex-direction:column;gap:24px;}
-    .search-wrap{background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:20px 24px;display:flex;flex-direction:column;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
-    .search-label{font-family:'DM Serif Display',serif;font-size:26px;line-height:1.2;}
-    .search-label em{color:var(--accent);font-style:italic;}
-    .search-row{display:flex;gap:10px;}
-    .ticker-input{flex:1;background:#f8f6f0;border:1px solid var(--rule);border-radius:3px;padding:12px 16px;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:500;color:var(--ink);text-transform:uppercase;letter-spacing:.1em;outline:none;transition:border-color .2s;}
-    .ticker-input::placeholder{font-weight:300;letter-spacing:.05em;text-transform:none;color:#aaa;}
-    .ticker-input:focus{border-color:var(--accent);}
-    .analyze-btn{background:var(--ink);color:var(--bg);border:none;border-radius:3px;padding:12px 28px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.08em;cursor:pointer;transition:opacity .2s;white-space:nowrap;}
-    .analyze-btn:hover{opacity:.82;}
-    .analyze-btn:disabled{opacity:.4;cursor:not-allowed;}
-    .quick-tickers{display:flex;gap:8px;flex-wrap:wrap;}
-    .quick-chip{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border:1px solid var(--rule);border-radius:2px;cursor:pointer;background:#f8f6f0;color:var(--muted);transition:all .15s;letter-spacing:.05em;}
-    .quick-chip:hover{background:var(--ink);color:var(--bg);border-color:var(--ink);}
-    .loading-card{background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:28px 24px;display:flex;flex-direction:column;gap:16px;}
-    .loading-step{display:flex;align-items:center;gap:12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);transition:color .3s;}
-    .loading-step.active{color:var(--ink);}
-    .loading-step.done{color:var(--green);}
-    .step-icon{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--rule);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;transition:all .3s;}
-    .loading-step.active .step-icon{border-color:var(--accent);background:var(--accent-bg);color:var(--accent);animation:pulse 1s infinite;}
-    .loading-step.done .step-icon{border-color:var(--green);background:var(--green-bg);color:var(--green);}
-    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(42,74,138,.3);}50%{box-shadow:0 0 0 4px rgba(42,74,138,0);}}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-    #report{animation:fadeUp .5s ease;}
-    .report-header{background:var(--ink);color:var(--bg);border-radius:4px;padding:24px 28px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;}
-    .company-name{font-family:'DM Serif Display',serif;font-size:28px;line-height:1.1;}
-    .company-ticker{font-family:'JetBrains Mono',monospace;font-size:12px;color:#888;margin-top:4px;letter-spacing:.1em;}
-    .summary-text{font-size:14px;line-height:1.7;color:#aaa;max-width:600px;margin-top:10px;}
-    .verdict-badge{padding:8px 16px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.08em;white-space:nowrap;align-self:flex-start;}
-    .verdict-bullish{background:var(--green-bg);color:var(--green);}
-    .verdict-bearish{background:var(--red-bg);color:var(--red);}
-    .verdict-neutral{background:var(--gold-bg);color:var(--gold);}
-    .score-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-    .score-card{background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:14px 16px;}
-    .score-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;}
-    .score-val{font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);margin-bottom:4px;}
-    .score-bar{height:3px;background:#e8e4d8;border-radius:2px;overflow:hidden;}
-    .score-fill{height:100%;border-radius:2px;transition:width 1s ease;}
-    .fill-green{background:var(--green);}
-    .fill-gold{background:var(--gold);}
-    .fill-red{background:var(--red);}
-    .fill-blue{background:var(--accent);}
-    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-    .bull-card,.bear-card{background:var(--paper);border:1px solid var(--rule);border-radius:4px;overflow:hidden;}
-    .card-head{padding:12px 16px;font-family:'DM Serif Display',serif;font-size:14px;display:flex;align-items:center;gap:8px;}
-    .bull-card .card-head{background:var(--green-bg);color:var(--green);}
-    .bear-card .card-head{background:var(--red-bg);color:var(--red);}
-    .card-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
-    .point{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.55;color:#3a3830;}
-    .point-icon{font-size:11px;margin-top:2px;flex-shrink:0;}
-    .bull-card .point-icon{color:var(--green);}
-    .bear-card .point-icon{color:var(--red);}
-    .section-card{background:var(--paper);border:1px solid var(--rule);border-radius:4px;overflow:hidden;}
-    .section-head{padding:12px 18px;border-bottom:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);background:#f8f6f0;}
-    .section-body{padding:16px 18px;font-size:13px;line-height:1.7;color:#3a3830;}
-    .catalyst-list,.risk-list{display:flex;flex-direction:column;gap:8px;}
-    .catalyst-item{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:#f8f6f0;border-radius:3px;border-left:3px solid var(--accent);font-size:13px;line-height:1.5;color:#3a3830;}
-    .catalyst-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);margin-top:2px;flex-shrink:0;}
-    .risk-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f8f6f0;border-radius:3px;gap:12px;}
-    .risk-name{font-size:13px;color:#3a3830;}
-    .risk-level{font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 8px;border-radius:2px;white-space:nowrap;}
-    .risk-high{background:var(--red-bg);color:var(--red);}
-    .risk-med{background:var(--gold-bg);color:var(--gold);}
-    .risk-low{background:var(--green-bg);color:var(--green);}
-    .new-search-btn{background:transparent;border:1px solid var(--rule);border-radius:3px;padding:10px 20px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);cursor:pointer;align-self:center;transition:all .2s;letter-spacing:.05em;}
-    .new-search-btn:hover{background:var(--ink);color:var(--bg);border-color:var(--ink);}
-    .error-card{background:var(--red-bg);border:1px solid #e8b4b4;border-radius:4px;padding:16px 20px;color:var(--red);font-size:13px;font-family:'JetBrains Mono',monospace;}
-    .disclaimer{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:1.6;text-align:center;padding:4px 0;}
-    @media(max-width:600px){.score-strip{grid-template-columns:1fr 1fr;}.two-col{grid-template-columns:1fr;}}
+
+    .dark {
+      --bg: #09090b;
+      --bg2: #18181b;
+      --ink: #fafafa;
+      --ink2: #a1a1aa;
+      --ink3: #52525b;
+      --border: #27272a;
+      --surface: #18181b;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-logo-icon {
+      width: 30px;
+      height: 30px;
+      background: var(--ink);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-logo-icon svg { width: 16px; height: 16px; }
+
+    .nav-brand {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+
+    .nav-sub {
+      font-size: 11px;
+      color: var(--ink3);
+      font-weight: 400;
+    }
+
+    .theme-btn {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink2);
+      font-size: 15px;
+      transition: background 0.15s;
+    }
+    .theme-btn:hover { background: var(--bg2); }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      padding: 80px 24px 72px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .beta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink2);
+      margin-bottom: 28px;
+      background: var(--bg);
+    }
+
+    .beta-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: blink 2s infinite;
+    }
+
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .hero-title {
+      font-size: clamp(32px, 6vw, 56px);
+      font-weight: 800;
+      color: var(--ink);
+      letter-spacing: -1.5px;
+      line-height: 1.08;
+      margin-bottom: 20px;
+    }
+
+    .hero-sub {
+      font-size: 18px;
+      color: var(--ink2);
+      line-height: 1.65;
+      max-width: 520px;
+      margin: 0 auto 36px;
+      font-weight: 400;
+    }
+
+    .hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--ink);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--radius);
+      padding: 13px 28px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      text-decoration: none;
+    }
+    .hero-cta:hover { opacity: 0.85; }
+    .hero-cta:active { transform: scale(0.98); }
+
+    /* FEATURES SECTION */
+    .features {
+      background: var(--bg2);
+      padding: 72px 24px;
+    }
+
+    .features-inner {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .features-title {
+      font-size: clamp(22px, 4vw, 32px);
+      font-weight: 700;
+      color: var(--ink);
+      text-align: center;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+    }
+
+    .features-sub {
+      font-size: 15px;
+      color: var(--ink2);
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px 20px;
+      transition: box-shadow 0.2s;
+    }
+    .feature-card:hover { box-shadow: var(--shadow-md); }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      margin-bottom: 14px;
+    }
+
+    .feature-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .feature-desc {
+      font-size: 13px;
+      color: var(--ink2);
+      line-height: 1.6;
+    }
+
+    /* ANALYZER SECTION */
+    .analyzer-section {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 64px 24px;
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--indigo);
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      font-size: clamp(20px, 3vw, 28px);
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.4px;
+      margin-bottom: 6px;
+    }
+
+    .section-sub {
+      font-size: 14px;
+      color: var(--ink2);
+      margin-bottom: 28px;
+    }
+
+    /* Search bar */
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .ticker-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .ticker-input {
+      width: 100%;
+      height: 48px;
+      padding: 0 16px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+      background: var(--surface);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .ticker-input::placeholder {
+      text-transform: none;
+      font-weight: 400;
+      letter-spacing: 0;
+      color: var(--ink3);
+    }
+
+    .ticker-input:focus {
+      border-color: var(--ink);
+      box-shadow: 0 0 0 3px rgba(9,9,11,0.08);
+    }
+
+    .dark .ticker-input:focus {
+      box-shadow: 0 0 0 3px rgba(250,250,250,0.08);
+    }
+
+    .analyze-btn {
+      height: 48px;
+      padding: 0 24px;
+      background: var(--ink);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--radius);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity 0.15s;
+    }
+    .analyze-btn:hover { opacity: 0.82; }
+    .analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .chips {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chips-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink3);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .chip {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      cursor: pointer;
+      color: var(--ink2);
+      background: var(--surface);
+      transition: all 0.15s;
+    }
+    .chip:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+    /* LOADING */
+    .loading-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px 24px;
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .loading-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--ink3);
+      transition: color 0.25s;
+    }
+    .step.active { color: var(--ink); }
+    .step.done { color: var(--green); }
+
+    .step-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--ink3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.25s;
+    }
+    .step.active .step-dot {
+      border-color: var(--ink);
+      color: var(--ink);
+      animation: spin-pulse 1.4s infinite;
+    }
+    .step.done .step-dot {
+      border-color: var(--green);
+      background: var(--green-light);
+      color: var(--green);
+    }
+
+    @keyframes spin-pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(9,9,11,0.2); }
+      50% { box-shadow: 0 0 0 4px rgba(9,9,11,0); }
+    }
+
+    /* REPORT */
+    #report {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .anim { animation: fadeUp 0.35s ease forwards; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .rpt-top {
+      padding: 22px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .rpt-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.3px;
+    }
+
+    .rpt-meta {
+      font-size: 12px;
+      color: var(--ink3);
+      margin: 3px 0 10px;
+      font-weight: 400;
+    }
+
+    .rpt-summary {
+      font-size: 13px;
+      color: var(--ink2);
+      line-height: 1.65;
+      max-width: 480px;
+    }
+
+    .verdict {
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .verdict-bullish { background: var(--green-light); color: var(--green); }
+    .verdict-bearish { background: var(--red-light); color: var(--red); }
+    .verdict-neutral { background: var(--amber-light); color: var(--amber); }
+
+    /* Scores */
+    .scores-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .score-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+    }
+
+    .score-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink3);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+
+    .score-val {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .score-track {
+      height: 3px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .score-bar {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.9s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* Two col */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .case-head {
+      padding: 11px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bull .case-head { color: var(--green); background: var(--green-light); }
+    .bear .case-head { color: var(--red); background: var(--red-light); }
+
+    .case-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    .pt {
+      display: flex;
+      gap: 10px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--ink2);
+      align-items: flex-start;
+    }
+
+    .pt-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      margin-top: 7px;
+      flex-shrink: 0;
+    }
+
+    .bull .pt-dot { background: var(--green); }
+    .bear .pt-dot { background: var(--red); }
+
+    .card-head {
+      padding: 11px 18px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink2);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+    }
+
+    .card-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 9px; }
+
+    .catalyst {
+      display: flex;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--bg2);
+      border-radius: var(--radius);
+      border-left: 2px solid var(--indigo);
+      font-size: 13px;
+      color: var(--ink2);
+      line-height: 1.5;
+    }
+
+    .cat-num {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--indigo);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .risk-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--bg2);
+      border-radius: var(--radius);
+      gap: 12px;
+    }
+
+    .risk-name { font-size: 13px; color: var(--ink2); }
+
+    .risk-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.3px;
+    }
+    .risk-high { background: var(--red-light); color: var(--red); }
+    .risk-medium { background: var(--amber-light); color: var(--amber); }
+    .risk-low { background: var(--green-light); color: var(--green); }
+
+    .analyst-txt {
+      font-size: 13px;
+      color: var(--ink2);
+      line-height: 1.7;
+      font-style: italic;
+    }
+
+    .rpt-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-top: 4px;
+    }
+
+    .reset-btn {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink2);
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 16px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.15s;
+    }
+    .reset-btn:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+    .disclaimer { font-size: 11px; color: var(--ink3); }
+
+    .error-box {
+      background: var(--red-light);
+      border: 1px solid #fca5a5;
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--red);
+      font-weight: 500;
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--ink3);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 700px) {
+      nav { padding: 0 16px; }
+      .hero { padding: 48px 16px 40px; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .analyzer-section { padding: 40px 16px; }
+      .search-bar { flex-direction: column; }
+      .analyze-btn { width: 100%; justify-content: center; }
+      .scores-grid { grid-template-columns: 1fr 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+      .rpt-top { flex-direction: column; }
+      footer { flex-direction: column; gap: 8px; text-align: center; }
+    }
+
+    @media (max-width: 480px) {
+      .features-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">Lynk<em>AI</em></div>
-  <div class="tagline">AI Stock Analysis Agent</div>
-</header>
-
-<main>
-  <div class="search-wrap">
-    <div class="search-label">Deep research on any stock,<br><em>in seconds.</em></div>
-    <div class="search-row">
-      <input class="ticker-input" id="ticker-input" placeholder="Enter ticker (e.g. AAPL, NVDA, TSLA)" maxlength="10" />
-      <button class="analyze-btn" id="analyze-btn" onclick="analyze()">ANALYZE →</button>
+<!-- NAV -->
+<nav>
+  <div class="nav-left">
+    <div class="nav-logo-icon">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 12L6 7L9 10L13 4" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="13" cy="4" r="1.5" fill="white"/>
+      </svg>
     </div>
-    <div class="quick-tickers">
-      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);padding:4px 0;letter-spacing:.05em;">POPULAR:</span>
-      <div class="quick-chip" onclick="quickPick('NVDA')">NVDA</div>
-      <div class="quick-chip" onclick="quickPick('AAPL')">AAPL</div>
-      <div class="quick-chip" onclick="quickPick('TSLA')">TSLA</div>
-      <div class="quick-chip" onclick="quickPick('MSFT')">MSFT</div>
-      <div class="quick-chip" onclick="quickPick('META')">META</div>
-      <div class="quick-chip" onclick="quickPick('AMZN')">AMZN</div>
+    <div class="nav-brand">
+      <div class="nav-name">LynkAI</div>
+      <div class="nav-sub">Track and analyze stocks with AI</div>
     </div>
   </div>
+  <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">☀</button>
+</nav>
 
-  <div id="loading-card" class="loading-card" style="display:none;">
-    <div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--ink);margin-bottom:4px;">Researching <span id="loading-ticker" style="color:var(--accent);"></span>...</div>
-    <div class="loading-step" id="step-1"><div class="step-icon">1</div><span>Searching latest news & market data</span></div>
-    <div class="loading-step" id="step-2"><div class="step-icon">2</div><span>Analyzing fundamentals & financials</span></div>
-    <div class="loading-step" id="step-3"><div class="step-icon">3</div><span>Building bull & bear case</span></div>
-    <div class="loading-step" id="step-4"><div class="step-icon">4</div><span>Generating investment brief</span></div>
+<!-- HERO -->
+<section class="hero">
+  <div class="beta-pill">
+    <div class="beta-dot"></div>
+    Powered by Claude AI
   </div>
+  <h1 class="hero-title">Invest smarter with<br>institutional-quality analysis</h1>
+  <p class="hero-sub">LynkAI gives you the bull case, bear case, risk factors, and AI-driven insights that professional analysts use — for free.</p>
+  <a href="#analyzer" class="hero-cta">Analyze a stock →</a>
+</section>
 
-  <div id="error-area"></div>
-
-  <div id="report" style="display:none;flex-direction:column;gap:16px;">
-    <div class="report-header">
-      <div>
-        <div class="company-name" id="r-name"></div>
-        <div class="company-ticker" id="r-ticker"></div>
-        <div class="summary-text" id="r-summary"></div>
+<!-- FEATURES -->
+<section class="features">
+  <div class="features-inner">
+    <h2 class="features-title">Everything you need to analyze stocks</h2>
+    <p class="features-sub">Professional-grade AI research designed for individual investors who want an edge.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-name">Deep Analysis</div>
+        <div class="feature-desc">Bull & bear case, momentum scores, and valuation metrics — all in one brief.</div>
       </div>
-      <div id="r-verdict" class="verdict-badge verdict-neutral">NEUTRAL</div>
+      <div class="feature-card">
+        <div class="feature-icon">⚖️</div>
+        <div class="feature-name">Balanced View</div>
+        <div class="feature-desc">Never one-sided. Every analysis surfaces both upside potential and downside risks.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-name">AI-Powered Insights</div>
+        <div class="feature-desc">Intelligent competitor recommendations and analysis snapshots powered by Claude.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <div class="feature-name">Risk Factors</div>
+        <div class="feature-desc">Clear risk ratings — High, Medium, Low — so you know exactly what you're taking on.</div>
+      </div>
     </div>
-
-    <div class="score-strip">
-      <div class="score-card"><div class="score-label">Growth Score</div><div class="score-val" id="s-growth">—</div><div class="score-bar"><div class="score-fill fill-green" id="b-growth" style="width:0%"></div></div></div>
-      <div class="score-card"><div class="score-label">Value Score</div><div class="score-val" id="s-value">—</div><div class="score-bar"><div class="score-fill fill-blue" id="b-value" style="width:0%"></div></div></div>
-      <div class="score-card"><div class="score-label">Momentum</div><div class="score-val" id="s-momentum">—</div><div class="score-bar"><div class="score-fill fill-gold" id="b-momentum" style="width:0%"></div></div></div>
-      <div class="score-card"><div class="score-label">Risk Level</div><div class="score-val" id="s-risk">—</div><div class="score-bar"><div class="score-fill fill-red" id="b-risk" style="width:0%"></div></div></div>
-    </div>
-
-    <div class="two-col">
-      <div class="bull-card"><div class="card-head">▲ Bull Case</div><div class="card-body" id="r-bull"></div></div>
-      <div class="bear-card"><div class="card-head">▼ Bear Case</div><div class="card-body" id="r-bear"></div></div>
-    </div>
-
-    <div class="section-card">
-      <div class="section-head">✦ Key Catalysts to Watch</div>
-      <div class="section-body"><div class="catalyst-list" id="r-catalysts"></div></div>
-    </div>
-
-    <div class="section-card">
-      <div class="section-head">⚠ Risk Factors</div>
-      <div class="section-body"><div class="risk-list" id="r-risks"></div></div>
-    </div>
-
-    <div class="section-card">
-      <div class="section-head">◎ Analyst Take</div>
-      <div class="section-body" id="r-analyst" style="font-style:italic;color:var(--muted);"></div>
-    </div>
-
-    <button class="new-search-btn" onclick="reset()">← ANALYZE ANOTHER STOCK</button>
-    <div class="disclaimer">For educational purposes only. Not financial advice. Always do your own research.</div>
   </div>
-</main>
+</section>
+
+<!-- ANALYZER -->
+<section class="analyzer-section" id="analyzer">
+  <div class="section-label">Live Analyzer</div>
+  <h2 class="section-title">Get an instant investment brief</h2>
+  <p class="section-sub">Enter any stock ticker and get a full AI-generated research report in seconds.</p>
+
+  <div class="search-bar">
+    <input class="ticker-input" id="ticker-input" placeholder="Enter ticker symbol (e.g. AAPL, NVDA, TSLA)" maxlength="10" />
+    <button class="analyze-btn" id="analyze-btn" onclick="analyze()">
+      Analyze <span>→</span>
+    </button>
+  </div>
+
+  <div class="chips">
+    <span class="chips-label">Try:</span>
+    <div class="chip" onclick="quickPick('NVDA')">NVDA</div>
+    <div class="chip" onclick="quickPick('AAPL')">AAPL</div>
+    <div class="chip" onclick="quickPick('TSLA')">TSLA</div>
+    <div class="chip" onclick="quickPick('MSFT')">MSFT</div>
+    <div class="chip" onclick="quickPick('META')">META</div>
+    <div class="chip" onclick="quickPick('AMZN')">AMZN</div>
+    <div class="chip" onclick="quickPick('GOOGL')">GOOGL</div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-wrap" id="loading-wrap">
+    <div class="loading-label">Analyzing <span id="loading-ticker" style="color:var(--indigo)"></span>...</div>
+    <div class="step" id="s1"><div class="step-dot">1</div><span>Searching news & market data</span></div>
+    <div class="step" id="s2"><div class="step-dot">2</div><span>Analyzing fundamentals & financials</span></div>
+    <div class="step" id="s3"><div class="step-dot">3</div><span>Building bull & bear case</span></div>
+    <div class="step" id="s4"><div class="step-dot">4</div><span>Generating investment brief</span></div>
+  </div>
+
+  <div id="err-area"></div>
+
+  <!-- Report -->
+  <div id="report">
+
+    <div class="card anim">
+      <div class="rpt-top">
+        <div>
+          <div class="rpt-name" id="r-name"></div>
+          <div class="rpt-meta" id="r-meta"></div>
+          <div class="rpt-summary" id="r-summary"></div>
+        </div>
+        <div id="r-verdict" class="verdict verdict-neutral">NEUTRAL</div>
+      </div>
+    </div>
+
+    <div class="scores-grid anim">
+      <div class="score-tile">
+        <div class="score-label">Growth</div>
+        <div class="score-val" id="sv-growth">—</div>
+        <div class="score-track"><div class="score-bar" id="sb-growth" style="width:0%;background:#16a34a"></div></div>
+      </div>
+      <div class="score-tile">
+        <div class="score-label">Value</div>
+        <div class="score-val" id="sv-value">—</div>
+        <div class="score-track"><div class="score-bar" id="sb-value" style="width:0%;background:#635bff"></div></div>
+      </div>
+      <div class="score-tile">
+        <div class="score-label">Momentum</div>
+        <div class="score-val" id="sv-momentum">—</div>
+        <div class="score-track"><div class="score-bar" id="sb-momentum" style="width:0%;background:#d97706"></div></div>
+      </div>
+      <div class="score-tile">
+        <div class="score-label">Risk</div>
+        <div class="score-val" id="sv-risk">—</div>
+        <div class="score-track"><div class="score-bar" id="sb-risk" style="width:0%;background:#dc2626"></div></div>
+      </div>
+    </div>
+
+    <div class="two-col anim">
+      <div class="card bull">
+        <div class="case-head">↑ Bull Case</div>
+        <div class="case-body" id="r-bull"></div>
+      </div>
+      <div class="card bear">
+        <div class="case-head">↓ Bear Case</div>
+        <div class="case-body" id="r-bear"></div>
+      </div>
+    </div>
+
+    <div class="card anim">
+      <div class="card-head">Key Catalysts to Watch</div>
+      <div class="card-body" id="r-catalysts"></div>
+    </div>
+
+    <div class="card anim">
+      <div class="card-head">Risk Factors</div>
+      <div class="card-body" id="r-risks"></div>
+    </div>
+
+    <div class="card anim">
+      <div class="card-head">Analyst Take</div>
+      <div class="card-body">
+        <div class="analyst-txt" id="r-analyst"></div>
+      </div>
+    </div>
+
+    <div class="rpt-footer anim">
+      <button class="reset-btn" onclick="reset()">← Analyze another stock</button>
+      <div class="disclaimer">For educational purposes only. Not financial advice.</div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div>© 2025 LynkAI. Built with Claude AI.</div>
+  <div>Not financial advice. For educational use only.</div>
+</footer>
 
 <script>
+  const isDark = () => document.documentElement.classList.contains('dark');
+
+  function toggleTheme() {
+    document.documentElement.classList.toggle('dark');
+    document.getElementById('theme-btn').textContent = isDark() ? '☀' : '☾';
+  }
+
   function quickPick(t) {
     document.getElementById('ticker-input').value = t;
     analyze();
@@ -175,9 +898,11 @@
 
   function setStep(n) {
     for (let i = 1; i <= 4; i++) {
-      const el = document.getElementById(`step-${i}`);
-      el.className = 'loading-step' + (i < n ? ' done' : i === n ? ' active' : '');
-      el.querySelector('.step-icon').textContent = i < n ? '✓' : i;
+      const el = document.getElementById(`s${i}`);
+      const dot = el.querySelector('.step-dot');
+      if (i < n) { el.className = 'step done'; dot.textContent = '✓'; }
+      else if (i === n) { el.className = 'step active'; dot.textContent = i; }
+      else { el.className = 'step'; dot.textContent = i; }
     }
   }
 
@@ -187,14 +912,15 @@
 
     document.getElementById('analyze-btn').disabled = true;
     document.getElementById('report').style.display = 'none';
-    document.getElementById('error-area').innerHTML = '';
+    document.getElementById('err-area').innerHTML = '';
     document.getElementById('loading-ticker').textContent = ticker;
-    document.getElementById('loading-card').style.display = 'flex';
+    const lw = document.getElementById('loading-wrap');
+    lw.style.display = 'flex';
     setStep(1);
 
-    setTimeout(() => setStep(2), 800);
-    setTimeout(() => setStep(3), 1800);
-    setTimeout(() => setStep(4), 2800);
+    setTimeout(() => setStep(2), 900);
+    setTimeout(() => setStep(3), 1900);
+    setTimeout(() => setStep(4), 2900);
 
     try {
       const res = await fetch('/api/analyze', {
@@ -211,37 +937,43 @@
       const d = await res.json();
 
       document.getElementById('r-name').textContent = d.name;
-      document.getElementById('r-ticker').textContent = `${d.ticker} · ${d.sector}`;
+      document.getElementById('r-meta').textContent = `${d.ticker} · ${d.sector}`;
       document.getElementById('r-summary').textContent = d.summary;
 
       const vb = document.getElementById('r-verdict');
       vb.textContent = d.verdict;
-      vb.className = `verdict-badge verdict-${d.verdict.toLowerCase()}`;
+      vb.className = `verdict verdict-${d.verdict.toLowerCase()}`;
 
       ['growth','value','momentum','risk'].forEach(k => {
         const v = d.scores[k];
-        document.getElementById(`s-${k}`).textContent = `${v}/10`;
-        setTimeout(() => { document.getElementById(`b-${k}`).style.width = (v * 10) + '%'; }, 100);
+        document.getElementById(`sv-${k}`).textContent = `${v}/10`;
+        setTimeout(() => { document.getElementById(`sb-${k}`).style.width = (v * 10) + '%'; }, 200);
       });
 
       document.getElementById('r-bull').innerHTML = d.bull.map(p =>
-        `<div class="point"><span class="point-icon">▲</span><span>${p}</span></div>`).join('');
+        `<div class="pt"><div class="pt-dot"></div><span>${p}</span></div>`).join('');
+
       document.getElementById('r-bear').innerHTML = d.bear.map(p =>
-        `<div class="point"><span class="point-icon">▼</span><span>${p}</span></div>`).join('');
+        `<div class="pt"><div class="pt-dot"></div><span>${p}</span></div>`).join('');
+
       document.getElementById('r-catalysts').innerHTML = d.catalysts.map((c, i) =>
-        `<div class="catalyst-item"><span class="catalyst-num">${String(i+1).padStart(2,'0')}</span><span>${c}</span></div>`).join('');
+        `<div class="catalyst"><span class="cat-num">${String(i+1).padStart(2,'0')}</span><span>${c}</span></div>`).join('');
+
       document.getElementById('r-risks').innerHTML = d.risks.map(r =>
-        `<div class="risk-item"><span class="risk-name">${r.name}</span><span class="risk-level risk-${r.level.toLowerCase()}">${r.level}</span></div>`).join('');
+        `<div class="risk-row"><span class="risk-name">${r.name}</span><span class="risk-pill risk-${r.level.toLowerCase()}">${r.level}</span></div>`).join('');
+
       document.getElementById('r-analyst').textContent = d.analyst;
 
-      document.getElementById('loading-card').style.display = 'none';
+      lw.style.display = 'none';
       const rep = document.getElementById('report');
       rep.style.display = 'flex';
+      rep.style.flexDirection = 'column';
+      document.getElementById('analyzer').scrollIntoView({ behavior: 'smooth' });
 
     } catch (e) {
-      document.getElementById('loading-card').style.display = 'none';
-      document.getElementById('error-area').innerHTML =
-        `<div class="error-card">⚠ ${e.message || 'Something went wrong. Please try again.'}</div>`;
+      lw.style.display = 'none';
+      document.getElementById('err-area').innerHTML =
+        `<div class="error-box" style="margin-top:16px">Error: ${e.message}</div>`;
     }
 
     document.getElementById('analyze-btn').disabled = false;
@@ -250,7 +982,8 @@
   function reset() {
     document.getElementById('report').style.display = 'none';
     document.getElementById('ticker-input').value = '';
-    document.getElementById('ticker-input').focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => document.getElementById('ticker-input').focus(), 500);
   }
 
   document.getElementById('ticker-input').addEventListener('keydown', e => {
