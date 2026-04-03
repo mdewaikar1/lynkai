@@ -955,7 +955,7 @@
 
   function showWatchlist() {
     document.getElementById('home-view').style.display = 'none';
-    document.getElementById('watchlist-view').style.display = '';
+    document.getElementById('watchlist-view').style.display = 'block';
     loadWatchlist();
   }
 
@@ -1112,73 +1112,73 @@
     document.getElementById('wl-badge').textContent = count > 0 ? `(${count})` : '';
   }
 
-  async function loadWatchlist() {
-    const grid = document.getElementById('wl-grid');
-    grid.innerHTML = '<div style="color:var(--ink3);font-size:13px;padding:16px 0">Loading...</div>';
+async function loadWatchlist() {
+  const grid = document.getElementById('wl-grid');
+  grid.innerHTML = '<div style="color:var(--ink3);font-size:13px;padding:16px 0">Loading...</div>';
 
-    const { data, error } = await sb.from('watchlist')
-      .select('*')
-      .eq('user_id', currentUser.id)
-      .order('saved_at', { ascending: false });
+  const { data, error } = await sb.from('watchlist')
+    .select('*')
+    .order('saved_at', { ascending: false });
 
-    if (error || !data) {
-      grid.innerHTML = '<div class="error-box">Failed to load watchlist.</div>';
-      return;
-    }
-
-    document.getElementById('wl-count').textContent = `${data.length} stock${data.length !== 1 ? 's' : ''} saved`;
-
-    if (data.length === 0) {
-      grid.innerHTML = `
-        <div class="wl-empty" style="grid-column:1/-1">
-          <div class="wl-empty-icon">☆</div>
-          <div class="wl-empty-title">Your watchlist is empty</div>
-          <div>Analyze a stock and save it to start tracking.</div>
-        </div>`;
-      return;
-    }
-
-    grid.innerHTML = data.map(s => {
-      const date = new Date(s.saved_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      const rating = (s.rating || 'HOLD').toLowerCase();
-      const ratingClass = `wl-${rating}`;
-
-      const scores = [
-        { label: 'Growth', val: s.growth_score, color: '#16a34a' },
-        { label: 'Value', val: s.value_score, color: '#635bff' },
-        { label: 'Momentum', val: s.momentum_score, color: '#d97706' },
-        { label: 'Risk', val: s.risk_score, color: '#dc2626' },
-      ];
-
-      return `
-        <div class="wl-card" id="wl-card-${s.id}">
-          <div class="wl-card-top">
-            <div>
-              <div class="wl-ticker">${s.ticker}</div>
-              <div class="wl-name">${s.company_name}</div>
-            </div>
-            <div class="wl-rating ${ratingClass}">${s.rating}</div>
-          </div>
-          <div class="wl-scores">
-            ${scores.map(sc => `
-              <div class="wl-score">
-                <div class="wl-score-label">${sc.label}</div>
-                <div class="wl-score-row">
-                  <div class="wl-score-val">${sc.val}/10</div>
-                  <div class="wl-track"><div class="wl-fill" style="width:${sc.val*10}%;background:${sc.color}"></div></div>
-                </div>
-              </div>`).join('')}
-          </div>
-          <div class="wl-card-footer">
-            <div class="wl-date">Saved ${date}</div>
-            <div class="wl-actions">
-              <button class="wl-btn wl-analyze-btn" onclick="reanalyze('${s.ticker}')">Re-analyze</button>
-              <button class="wl-btn wl-remove-btn" onclick="removeFromWatchlist('${s.id}')">Remove</button>
-            </div>
-          </div>
-        </div>`;
-    }).join('');
+  if (error || !data) {
+    grid.innerHTML = '<div class="error-box">Failed to load watchlist.</div>';
+    return;
   }
+
+  document.getElementById('wl-count').textContent = `${data.length} stock${data.length !== 1 ? 's' : ''} saved`;
+
+  if (data.length === 0) {
+    grid.innerHTML = `<div class="wl-empty" style="grid-column:1/-1">
+      <div class="wl-empty-icon">☆</div>
+      <div class="wl-empty-title">Your watchlist is empty</div>
+      <div>Analyze a stock and save it to start tracking.</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = '';
+
+  data.forEach(s => {
+    const date = new Date(s.saved_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const rating = (s.rating || 'HOLD').toLowerCase();
+    const scores = [
+      { label: 'Growth', val: s.growth_score, color: '#16a34a' },
+      { label: 'Value', val: s.value_score, color: '#635bff' },
+      { label: 'Momentum', val: s.momentum_score, color: '#d97706' },
+      { label: 'Risk', val: s.risk_score, color: '#dc2626' },
+    ];
+
+    const card = document.createElement('div');
+    card.className = 'wl-card';
+    card.id = `wl-card-${s.id}`;
+    card.innerHTML = `
+      <div class="wl-card-top">
+        <div>
+          <div class="wl-ticker">${s.ticker}</div>
+          <div class="wl-name">${s.company_name}</div>
+        </div>
+        <div class="wl-rating wl-${rating}">${s.rating}</div>
+      </div>
+      <div class="wl-scores">
+        ${scores.map(sc => `
+          <div class="wl-score">
+            <div class="wl-score-label">${sc.label}</div>
+            <div class="wl-score-row">
+              <div class="wl-score-val">${sc.val}/10</div>
+              <div class="wl-track"><div class="wl-fill" style="width:${sc.val * 10}%;background:${sc.color}"></div></div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="wl-card-footer">
+        <div class="wl-date">Saved ${date}</div>
+        <div class="wl-actions">
+          <button class="wl-btn wl-analyze-btn" onclick="reanalyze('${s.ticker}')">Re-analyze</button>
+          <button class="wl-btn wl-remove-btn" onclick="removeFromWatchlist('${s.id}')">Remove</button>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
 
   async function removeFromWatchlist(id) {
     await sb.from('watchlist').delete().eq('id', id).eq('user_id', currentUser.id);
