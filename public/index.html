@@ -6,6 +6,7 @@
   <title>LynkAI — Institutional-Quality Stock Analysis</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -25,20 +26,17 @@
       --red-light: #fee2e2;
       --amber: #d97706;
       --amber-light: #fef3c7;
+      --buy: #16a34a;
+      --buy-bg: #dcfce7;
+      --hold: #d97706;
+      --hold-bg: #fef3c7;
+      --sell: #dc2626;
+      --sell-bg: #fee2e2;
       --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
       --shadow-md: 0 4px 16px rgba(0,0,0,.08);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
       --radius: 8px;
       --radius-lg: 12px;
-    }
-
-    .dark {
-      --bg: #09090b;
-      --bg2: #18181b;
-      --ink: #fafafa;
-      --ink2: #a1a1aa;
-      --ink3: #52525b;
-      --border: #27272a;
-      --surface: #18181b;
     }
 
     body {
@@ -46,173 +44,230 @@
       color: var(--ink);
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       -webkit-font-smoothing: antialiased;
-      transition: background 0.2s, color 0.2s;
     }
 
-    /* NAV */
+    /* ── NAV ── */
     nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      position: sticky; top: 0; z-index: 200;
       background: var(--bg);
       border-bottom: 1px solid var(--border);
       padding: 0 32px;
       height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between;
     }
 
-    .nav-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .nav-left { display: flex; align-items: center; gap: 10px; cursor: pointer; }
 
     .nav-logo-icon {
-      width: 30px;
-      height: 30px;
-      background: var(--ink);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 30px; height: 30px;
+      background: var(--ink); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
     }
-
     .nav-logo-icon svg { width: 16px; height: 16px; }
 
-    .nav-brand {
-      display: flex;
-      flex-direction: column;
+    .nav-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+    .nav-sub { font-size: 11px; color: var(--ink3); }
+
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+
+    .nav-btn {
+      height: 34px; padding: 0 16px;
+      border-radius: var(--radius);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all 0.15s;
     }
 
-    .nav-name {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--ink);
-      line-height: 1.1;
-    }
-
-    .nav-sub {
-      font-size: 11px;
-      color: var(--ink3);
-      font-weight: 400;
-    }
-
-    .theme-btn {
-      width: 34px;
-      height: 34px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
+    .nav-ghost {
       background: transparent;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      border: 1px solid var(--border);
       color: var(--ink2);
-      font-size: 15px;
-      transition: background 0.15s;
     }
-    .theme-btn:hover { background: var(--bg2); }
+    .nav-ghost:hover { background: var(--bg2); }
 
-    /* HERO */
+    .nav-solid {
+      background: var(--ink);
+      border: 1px solid var(--ink);
+      color: var(--bg);
+    }
+    .nav-solid:hover { opacity: 0.82; }
+
+    .nav-watchlist-btn {
+      display: none;
+      height: 34px; padding: 0 14px;
+      border-radius: var(--radius);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      background: var(--indigo-light);
+      border: 1px solid #c4c0fd;
+      color: var(--indigo);
+      align-items: center; gap: 6px;
+      transition: all 0.15s;
+    }
+    .nav-watchlist-btn:hover { background: #ddd9fd; }
+
+    .nav-user {
+      display: none;
+      align-items: center; gap: 8px;
+      font-size: 13px; color: var(--ink2);
+    }
+
+    .avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--indigo); color: white;
+      font-size: 11px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── MODAL OVERLAY ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.45);
+      align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: 32px 28px;
+      width: 100%; max-width: 400px;
+      position: relative;
+      animation: fadeUp 0.25s ease;
+    }
+
+    .modal-close {
+      position: absolute; top: 14px; right: 16px;
+      background: none; border: none;
+      font-size: 20px; color: var(--ink3);
+      cursor: pointer; line-height: 1;
+    }
+    .modal-close:hover { color: var(--ink); }
+
+    .modal-title {
+      font-size: 20px; font-weight: 700;
+      color: var(--ink); letter-spacing: -0.3px;
+      margin-bottom: 4px;
+    }
+    .modal-sub { font-size: 13px; color: var(--ink3); margin-bottom: 24px; }
+
+    .modal-tabs {
+      display: flex; gap: 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden; margin-bottom: 20px;
+    }
+
+    .modal-tab {
+      flex: 1; padding: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; font-weight: 500;
+      cursor: pointer; border: none;
+      background: var(--bg2); color: var(--ink3);
+      transition: all 0.15s;
+    }
+    .modal-tab.active { background: var(--ink); color: var(--bg); }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+
+    .form-label { font-size: 12px; font-weight: 500; color: var(--ink2); }
+
+    .form-input {
+      height: 42px; padding: 0 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px; color: var(--ink);
+      background: var(--surface);
+      outline: none; transition: border-color 0.15s;
+      width: 100%;
+    }
+    .form-input:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(99,91,255,0.1); }
+
+    .form-btn {
+      width: 100%; height: 44px;
+      background: var(--ink); color: var(--bg);
+      border: none; border-radius: var(--radius);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; margin-top: 6px;
+      transition: opacity 0.15s;
+    }
+    .form-btn:hover { opacity: 0.82; }
+    .form-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .auth-error {
+      font-size: 12px; color: var(--red);
+      background: var(--red-light);
+      padding: 8px 12px; border-radius: var(--radius);
+      margin-bottom: 12px; display: none;
+    }
+
+    /* ── VIEWS ── */
+    #home-view, #watchlist-view { }
+    #watchlist-view { display: none; }
+
+    /* ── HERO ── */
     .hero {
       text-align: center;
       padding: 80px 24px 72px;
-      max-width: 760px;
-      margin: 0 auto;
+      max-width: 760px; margin: 0 auto;
     }
 
     .beta-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 5px 14px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--ink2);
-      margin-bottom: 28px;
-      background: var(--bg);
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1px solid var(--border); border-radius: 20px;
+      padding: 5px 14px; font-size: 12px; font-weight: 500;
+      color: var(--ink2); margin-bottom: 28px;
     }
 
     .beta-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
+      width: 6px; height: 6px; border-radius: 50%;
       background: var(--green);
       animation: blink 2s infinite;
     }
-
-    @keyframes blink {
-      0%,100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
     .hero-title {
       font-size: clamp(32px, 6vw, 56px);
-      font-weight: 800;
-      color: var(--ink);
-      letter-spacing: -1.5px;
-      line-height: 1.08;
+      font-weight: 800; color: var(--ink);
+      letter-spacing: -1.5px; line-height: 1.08;
       margin-bottom: 20px;
     }
 
     .hero-sub {
-      font-size: 18px;
-      color: var(--ink2);
-      line-height: 1.65;
-      max-width: 520px;
-      margin: 0 auto 36px;
-      font-weight: 400;
+      font-size: 18px; color: var(--ink2);
+      line-height: 1.65; max-width: 520px;
+      margin: 0 auto 36px; font-weight: 400;
     }
 
     .hero-cta {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--ink);
-      color: var(--bg);
-      border: none;
-      border-radius: var(--radius);
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--ink); color: var(--bg);
+      border: none; border-radius: var(--radius);
       padding: 13px 28px;
       font-family: 'Inter', sans-serif;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
-      text-decoration: none;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      transition: opacity 0.15s;
     }
     .hero-cta:hover { opacity: 0.85; }
-    .hero-cta:active { transform: scale(0.98); }
 
-    /* FEATURES SECTION */
-    .features {
-      background: var(--bg2);
-      padding: 72px 24px;
-    }
-
-    .features-inner {
-      max-width: 1000px;
-      margin: 0 auto;
-    }
+    /* ── FEATURES ── */
+    .features { background: var(--bg2); padding: 72px 24px; }
+    .features-inner { max-width: 1000px; margin: 0 auto; }
 
     .features-title {
       font-size: clamp(22px, 4vw, 32px);
-      font-weight: 700;
-      color: var(--ink);
-      text-align: center;
-      letter-spacing: -0.5px;
+      font-weight: 700; color: var(--ink);
+      text-align: center; letter-spacing: -0.5px;
       margin-bottom: 10px;
     }
-
-    .features-sub {
-      font-size: 15px;
-      color: var(--ink2);
-      text-align: center;
-      margin-bottom: 40px;
-    }
+    .features-sub { font-size: 15px; color: var(--ink2); text-align: center; margin-bottom: 40px; }
 
     .features-grid {
       display: grid;
@@ -221,234 +276,101 @@
     }
 
     .feature-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 24px 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px 20px;
       transition: box-shadow 0.2s;
     }
     .feature-card:hover { box-shadow: var(--shadow-md); }
 
     .feature-icon {
-      width: 40px;
-      height: 40px;
-      background: var(--bg2);
-      border: 1px solid var(--border);
+      width: 40px; height: 40px;
+      background: var(--bg2); border: 1px solid var(--border);
       border-radius: var(--radius);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; margin-bottom: 14px;
     }
+    .feature-name { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+    .feature-desc { font-size: 13px; color: var(--ink2); line-height: 1.6; }
 
-    .feature-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--ink);
-      margin-bottom: 6px;
-    }
-
-    .feature-desc {
-      font-size: 13px;
-      color: var(--ink2);
-      line-height: 1.6;
-    }
-
-    /* ANALYZER SECTION */
-    .analyzer-section {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 64px 24px;
-    }
+    /* ── ANALYZER ── */
+    .analyzer-section { max-width: 860px; margin: 0 auto; padding: 64px 24px; }
 
     .section-label {
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--indigo);
-      margin-bottom: 8px;
+      font-size: 12px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--indigo); margin-bottom: 8px;
     }
-
     .section-title {
-      font-size: clamp(20px, 3vw, 28px);
-      font-weight: 700;
-      color: var(--ink);
-      letter-spacing: -0.4px;
-      margin-bottom: 6px;
+      font-size: clamp(20px, 3vw, 28px); font-weight: 700;
+      color: var(--ink); letter-spacing: -0.4px; margin-bottom: 6px;
     }
+    .section-sub { font-size: 14px; color: var(--ink2); margin-bottom: 28px; }
 
-    .section-sub {
-      font-size: 14px;
-      color: var(--ink2);
-      margin-bottom: 28px;
-    }
-
-    /* Search bar */
-    .search-bar {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .ticker-wrap {
-      flex: 1;
-      position: relative;
-    }
+    .search-bar { display: flex; gap: 10px; margin-bottom: 14px; }
 
     .ticker-input {
-      width: 100%;
-      height: 48px;
-      padding: 0 16px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
+      flex: 1; height: 48px; padding: 0 16px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
       font-family: 'Inter', sans-serif;
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--ink);
-      background: var(--surface);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      outline: none;
-      transition: border-color 0.15s, box-shadow 0.15s;
+      font-size: 15px; font-weight: 600;
+      color: var(--ink); background: var(--surface);
+      text-transform: uppercase; letter-spacing: 1px;
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s;
     }
-
-    .ticker-input::placeholder {
-      text-transform: none;
-      font-weight: 400;
-      letter-spacing: 0;
-      color: var(--ink3);
-    }
-
-    .ticker-input:focus {
-      border-color: var(--ink);
-      box-shadow: 0 0 0 3px rgba(9,9,11,0.08);
-    }
-
-    .dark .ticker-input:focus {
-      box-shadow: 0 0 0 3px rgba(250,250,250,0.08);
-    }
+    .ticker-input::placeholder { text-transform: none; font-weight: 400; letter-spacing: 0; color: var(--ink3); }
+    .ticker-input:focus { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(9,9,11,0.08); }
 
     .analyze-btn {
-      height: 48px;
-      padding: 0 24px;
-      background: var(--ink);
-      color: var(--bg);
-      border: none;
-      border-radius: var(--radius);
+      height: 48px; padding: 0 24px;
+      background: var(--ink); color: var(--bg);
+      border: none; border-radius: var(--radius);
       font-family: 'Inter', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
       transition: opacity 0.15s;
     }
     .analyze-btn:hover { opacity: 0.82; }
     .analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    .chips {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .chips-label {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--ink3);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
+    .chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .chips-label { font-size: 11px; font-weight: 500; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.8px; }
 
     .chip {
-      font-size: 12px;
-      font-weight: 500;
+      font-size: 12px; font-weight: 500;
       padding: 4px 12px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      cursor: pointer;
-      color: var(--ink2);
-      background: var(--surface);
-      transition: all 0.15s;
+      border: 1px solid var(--border); border-radius: 20px;
+      cursor: pointer; color: var(--ink2);
+      background: var(--surface); transition: all 0.15s;
     }
     .chip:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 
-    /* LOADING */
+    /* ── LOADING ── */
     .loading-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 28px 24px;
-      display: none;
-      flex-direction: column;
-      gap: 14px;
-      margin-top: 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 28px 24px;
+      display: none; flex-direction: column; gap: 14px; margin-top: 20px;
     }
+    .loading-label { font-size: 14px; font-weight: 600; color: var(--ink); }
 
-    .loading-label {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--ink);
-    }
-
-    .step {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
-      color: var(--ink3);
-      transition: color 0.25s;
-    }
+    .step { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink3); transition: color 0.25s; }
     .step.active { color: var(--ink); }
     .step.done { color: var(--green); }
 
     .step-dot {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
+      width: 20px; height: 20px; border-radius: 50%;
       border: 1.5px solid var(--border);
-      font-size: 9px;
-      font-weight: 700;
-      color: var(--ink3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: all 0.25s;
+      font-size: 9px; font-weight: 700; color: var(--ink3);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all 0.25s;
     }
-    .step.active .step-dot {
-      border-color: var(--ink);
-      color: var(--ink);
-      animation: spin-pulse 1.4s infinite;
-    }
-    .step.done .step-dot {
-      border-color: var(--green);
-      background: var(--green-light);
-      color: var(--green);
-    }
+    .step.active .step-dot { border-color: var(--ink); color: var(--ink); animation: ripple 1.4s infinite; }
+    .step.done .step-dot { border-color: var(--green); background: var(--green-light); color: var(--green); }
+    @keyframes ripple { 0%,100%{box-shadow:0 0 0 0 rgba(9,9,11,.2)} 50%{box-shadow:0 0 0 4px rgba(9,9,11,0)} }
 
-    @keyframes spin-pulse {
-      0%,100% { box-shadow: 0 0 0 0 rgba(9,9,11,0.2); }
-      50% { box-shadow: 0 0 0 4px rgba(9,9,11,0); }
-    }
+    /* ── REPORT ── */
+    #report { display: none; flex-direction: column; gap: 14px; margin-top: 20px; }
 
-    /* REPORT */
-    #report {
-      display: none;
-      flex-direction: column;
-      gap: 14px;
-      margin-top: 20px;
-    }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
     .anim { animation: fadeUp 0.35s ease forwards; }
 
     .card {
@@ -458,253 +380,231 @@
       overflow: hidden;
     }
 
-    .rpt-top {
-      padding: 22px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
+    /* Rating banner */
+    .rating-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 24px; gap: 16px;
     }
 
-    .rpt-name {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--ink);
-      letter-spacing: -0.3px;
-    }
+    .rating-left { display: flex; align-items: center; gap: 16px; }
 
-    .rpt-meta {
-      font-size: 12px;
-      color: var(--ink3);
-      margin: 3px 0 10px;
-      font-weight: 400;
+    .rating-badge {
+      font-size: 22px; font-weight: 800;
+      padding: 10px 24px; border-radius: var(--radius);
+      letter-spacing: 1px; flex-shrink: 0;
     }
+    .rating-buy { background: var(--buy-bg); color: var(--buy); }
+    .rating-hold { background: var(--hold-bg); color: var(--hold); }
+    .rating-sell { background: var(--sell-bg); color: var(--sell); }
 
-    .rpt-summary {
-      font-size: 13px;
-      color: var(--ink2);
-      line-height: 1.65;
-      max-width: 480px;
+    .rating-reason { font-size: 14px; color: var(--ink2); line-height: 1.5; }
+
+    .save-btn {
+      display: flex; align-items: center; gap: 6px;
+      height: 38px; padding: 0 18px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; font-weight: 500;
+      cursor: pointer; background: var(--surface); color: var(--ink2);
+      white-space: nowrap; flex-shrink: 0;
+      transition: all 0.15s;
     }
+    .save-btn:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-light); }
+    .save-btn.saved { background: var(--green-light); color: var(--green); border-color: var(--green); cursor: default; }
+
+    .rpt-top { padding: 20px 24px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+    .rpt-name { font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: -0.3px; }
+    .rpt-meta { font-size: 12px; color: var(--ink3); margin: 3px 0 10px; }
+    .rpt-summary { font-size: 13px; color: var(--ink2); line-height: 1.65; max-width: 480px; }
 
     .verdict {
-      padding: 5px 12px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      white-space: nowrap;
-      flex-shrink: 0;
+      padding: 5px 12px; border-radius: 6px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+      white-space: nowrap; flex-shrink: 0;
     }
     .verdict-bullish { background: var(--green-light); color: var(--green); }
     .verdict-bearish { background: var(--red-light); color: var(--red); }
     .verdict-neutral { background: var(--amber-light); color: var(--amber); }
 
     /* Scores */
-    .scores-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-    }
+    .scores-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 
     .score-tile {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px;
     }
+    .score-label { font-size: 11px; font-weight: 500; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+    .score-val { font-size: 24px; font-weight: 700; color: var(--ink); letter-spacing: -0.5px; margin-bottom: 8px; }
+    .score-track { height: 3px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .score-bar { height: 100%; border-radius: 3px; transition: width 0.9s cubic-bezier(.4,0,.2,1); }
 
-    .score-label {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--ink3);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 6px;
-    }
-
-    .score-val {
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--ink);
-      letter-spacing: -0.5px;
-      margin-bottom: 8px;
-    }
-
-    .score-track {
-      height: 3px;
-      background: var(--border);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-
-    .score-bar {
-      height: 100%;
-      border-radius: 3px;
-      transition: width 0.9s cubic-bezier(.4,0,.2,1);
-    }
-
-    /* Two col */
+    /* Bull/Bear */
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
     .case-head {
-      padding: 11px 16px;
-      font-size: 12px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      padding: 11px 16px; font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px;
       border-bottom: 1px solid var(--border);
     }
-
     .bull .case-head { color: var(--green); background: var(--green-light); }
     .bear .case-head { color: var(--red); background: var(--red-light); }
 
     .case-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
 
-    .pt {
-      display: flex;
-      gap: 10px;
-      font-size: 13px;
-      line-height: 1.55;
-      color: var(--ink2);
-      align-items: flex-start;
-    }
-
-    .pt-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      margin-top: 7px;
-      flex-shrink: 0;
-    }
-
+    .pt { display: flex; gap: 10px; font-size: 13px; line-height: 1.55; color: var(--ink2); align-items: flex-start; }
+    .pt-dot { width: 5px; height: 5px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; }
     .bull .pt-dot { background: var(--green); }
     .bear .pt-dot { background: var(--red); }
 
     .card-head {
-      padding: 11px 18px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--ink2);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg2);
+      padding: 11px 18px; font-size: 11px; font-weight: 600;
+      color: var(--ink2); text-transform: uppercase; letter-spacing: 0.8px;
+      border-bottom: 1px solid var(--border); background: var(--bg2);
     }
-
     .card-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 9px; }
 
     .catalyst {
-      display: flex;
-      gap: 12px;
-      padding: 10px 12px;
-      background: var(--bg2);
-      border-radius: var(--radius);
+      display: flex; gap: 12px; padding: 10px 12px;
+      background: var(--bg2); border-radius: var(--radius);
       border-left: 2px solid var(--indigo);
-      font-size: 13px;
-      color: var(--ink2);
-      line-height: 1.5;
+      font-size: 13px; color: var(--ink2); line-height: 1.5;
     }
-
-    .cat-num {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--indigo);
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
+    .cat-num { font-size: 10px; font-weight: 700; color: var(--indigo); flex-shrink: 0; margin-top: 2px; }
 
     .risk-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 12px;
-      background: var(--bg2);
-      border-radius: var(--radius);
-      gap: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; background: var(--bg2); border-radius: var(--radius); gap: 12px;
     }
-
     .risk-name { font-size: 13px; color: var(--ink2); }
-
-    .risk-pill {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 3px 9px;
-      border-radius: 20px;
-      letter-spacing: 0.3px;
-    }
+    .risk-pill { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.3px; }
     .risk-high { background: var(--red-light); color: var(--red); }
     .risk-medium { background: var(--amber-light); color: var(--amber); }
     .risk-low { background: var(--green-light); color: var(--green); }
 
-    .analyst-txt {
-      font-size: 13px;
-      color: var(--ink2);
-      line-height: 1.7;
-      font-style: italic;
-    }
+    .analyst-txt { font-size: 13px; color: var(--ink2); line-height: 1.7; font-style: italic; }
 
-    .rpt-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-      padding-top: 4px;
-    }
-
+    .rpt-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 4px; }
     .reset-btn {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--ink2);
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 8px 16px;
-      cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      transition: all 0.15s;
+      font-size: 13px; font-weight: 500;
+      color: var(--ink2); background: var(--bg2);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 8px 16px; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s;
     }
     .reset-btn:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-
     .disclaimer { font-size: 11px; color: var(--ink3); }
 
     .error-box {
-      background: var(--red-light);
-      border: 1px solid #fca5a5;
-      border-radius: var(--radius);
-      padding: 12px 16px;
-      font-size: 13px;
-      color: var(--red);
-      font-weight: 500;
+      background: var(--red-light); border: 1px solid #fca5a5;
+      border-radius: var(--radius); padding: 12px 16px;
+      font-size: 13px; color: var(--red); font-weight: 500; margin-top: 16px;
     }
 
-    /* FOOTER */
+    /* ── WATCHLIST VIEW ── */
+    .watchlist-section { max-width: 1000px; margin: 0 auto; padding: 48px 24px; }
+
+    .wl-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 28px; flex-wrap: wrap; gap: 12px;
+    }
+
+    .wl-title { font-size: 24px; font-weight: 700; color: var(--ink); letter-spacing: -0.4px; }
+    .wl-count { font-size: 13px; color: var(--ink3); margin-top: 2px; }
+
+    .wl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .wl-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 18px 14px;
+      display: flex; flex-direction: column; gap: 14px;
+      transition: box-shadow 0.2s;
+      position: relative;
+    }
+    .wl-card:hover { box-shadow: var(--shadow-md); }
+
+    .wl-card-top { display: flex; align-items: flex-start; justify-content: space-between; }
+
+    .wl-ticker { font-size: 20px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px; }
+    .wl-name { font-size: 12px; color: var(--ink3); margin-top: 2px; }
+
+    .wl-rating {
+      font-size: 11px; font-weight: 700; padding: 4px 10px;
+      border-radius: 6px; letter-spacing: 0.5px; flex-shrink: 0;
+    }
+    .wl-buy { background: var(--buy-bg); color: var(--buy); }
+    .wl-hold { background: var(--hold-bg); color: var(--hold); }
+    .wl-sell { background: var(--sell-bg); color: var(--sell); }
+
+    .wl-scores { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .wl-score { display: flex; flex-direction: column; gap: 4px; }
+    .wl-score-label { font-size: 10px; font-weight: 500; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.6px; }
+    .wl-score-row { display: flex; align-items: center; gap: 8px; }
+    .wl-score-val { font-size: 13px; font-weight: 700; color: var(--ink); min-width: 24px; }
+    .wl-track { flex: 1; height: 3px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .wl-fill { height: 100%; border-radius: 3px; }
+
+    .wl-card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: 10px; border-top: 1px solid var(--border);
+    }
+    .wl-date { font-size: 11px; color: var(--ink3); }
+
+    .wl-actions { display: flex; gap: 8px; }
+
+    .wl-btn {
+      font-size: 12px; font-weight: 500; padding: 5px 12px;
+      border-radius: var(--radius); cursor: pointer;
+      font-family: 'Inter', sans-serif; transition: all 0.15s;
+    }
+
+    .wl-analyze-btn {
+      background: var(--indigo-light); color: var(--indigo);
+      border: 1px solid #c4c0fd;
+    }
+    .wl-analyze-btn:hover { background: #ddd9fd; }
+
+    .wl-remove-btn {
+      background: var(--bg2); color: var(--ink3);
+      border: 1px solid var(--border);
+    }
+    .wl-remove-btn:hover { background: var(--red-light); color: var(--red); border-color: #fca5a5; }
+
+    .wl-empty {
+      text-align: center; padding: 64px 24px;
+      color: var(--ink3); font-size: 14px;
+    }
+    .wl-empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .wl-empty-title { font-size: 16px; font-weight: 600; color: var(--ink2); margin-bottom: 6px; }
+
+    /* ── FOOTER ── */
     footer {
       border-top: 1px solid var(--border);
       padding: 28px 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--ink3);
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; color: var(--ink3);
     }
 
-    /* RESPONSIVE */
+    /* ── RESPONSIVE ── */
     @media (max-width: 700px) {
       nav { padding: 0 16px; }
       .hero { padding: 48px 16px 40px; }
       .features-grid { grid-template-columns: 1fr 1fr; }
       .analyzer-section { padding: 40px 16px; }
       .search-bar { flex-direction: column; }
-      .analyze-btn { width: 100%; justify-content: center; }
+      .analyze-btn { width: 100%; }
       .scores-grid { grid-template-columns: 1fr 1fr; }
       .two-col { grid-template-columns: 1fr; }
       .rpt-top { flex-direction: column; }
+      .rating-banner { flex-direction: column; align-items: flex-start; }
+      .watchlist-section { padding: 32px 16px; }
       footer { flex-direction: column; gap: 8px; text-align: center; }
     }
-
     @media (max-width: 480px) {
       .features-grid { grid-template-columns: 1fr; }
     }
@@ -714,169 +614,229 @@
 
 <!-- NAV -->
 <nav>
-  <div class="nav-left">
+  <div class="nav-left" onclick="showHome()">
     <div class="nav-logo-icon">
       <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M2 12L6 7L9 10L13 4" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         <circle cx="13" cy="4" r="1.5" fill="white"/>
       </svg>
     </div>
-    <div class="nav-brand">
+    <div>
       <div class="nav-name">LynkAI</div>
       <div class="nav-sub">Track and analyze stocks with AI</div>
     </div>
   </div>
-  <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">☀</button>
+  <div class="nav-right">
+    <button class="nav-watchlist-btn" id="nav-watchlist-btn" onclick="showWatchlist()">
+      ☆ Watchlist <span id="wl-badge"></span>
+    </button>
+    <div class="nav-user" id="nav-user">
+      <div class="avatar" id="user-avatar"></div>
+      <span id="user-email-short"></span>
+      <button class="nav-btn nav-ghost" onclick="signOut()">Sign out</button>
+    </div>
+    <button class="nav-btn nav-ghost" id="nav-signin-btn" onclick="openAuth('signin')">Sign in</button>
+    <button class="nav-btn nav-solid" id="nav-signup-btn" onclick="openAuth('signup')">Sign up</button>
+  </div>
 </nav>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="beta-pill">
-    <div class="beta-dot"></div>
-    Powered by Claude AI
-  </div>
-  <h1 class="hero-title">Invest smarter with<br>institutional-quality analysis</h1>
-  <p class="hero-sub">LynkAI gives you the bull case, bear case, risk factors, and AI-driven insights that professional analysts use — for free.</p>
-  <a href="#analyzer" class="hero-cta">Analyze a stock →</a>
-</section>
-
-<!-- FEATURES -->
-<section class="features">
-  <div class="features-inner">
-    <h2 class="features-title">Everything you need to analyze stocks</h2>
-    <p class="features-sub">Professional-grade AI research designed for individual investors who want an edge.</p>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <div class="feature-name">Deep Analysis</div>
-        <div class="feature-desc">Bull & bear case, momentum scores, and valuation metrics — all in one brief.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⚖️</div>
-        <div class="feature-name">Balanced View</div>
-        <div class="feature-desc">Never one-sided. Every analysis surfaces both upside potential and downside risks.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⚡</div>
-        <div class="feature-name">AI-Powered Insights</div>
-        <div class="feature-desc">Intelligent competitor recommendations and analysis snapshots powered by Claude.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔍</div>
-        <div class="feature-name">Risk Factors</div>
-        <div class="feature-desc">Clear risk ratings — High, Medium, Low — so you know exactly what you're taking on.</div>
-      </div>
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAuth()">×</button>
+    <div class="modal-title" id="modal-title">Welcome back</div>
+    <div class="modal-sub" id="modal-sub">Sign in to save stocks to your watchlist</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tab-signin" onclick="switchTab('signin')">Sign in</button>
+      <button class="modal-tab" id="tab-signup" onclick="switchTab('signup')">Sign up</button>
     </div>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="auth-email" placeholder="you@example.com" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" type="password" id="auth-password" placeholder="••••••••" />
+    </div>
+    <button class="form-btn" id="auth-submit-btn" onclick="submitAuth()">Sign in</button>
   </div>
-</section>
+</div>
 
-<!-- ANALYZER -->
-<section class="analyzer-section" id="analyzer">
-  <div class="section-label">Live Analyzer</div>
-  <h2 class="section-title">Get an instant investment brief</h2>
-  <p class="section-sub">Enter any stock ticker and get a full AI-generated research report in seconds.</p>
+<!-- HOME VIEW -->
+<div id="home-view">
 
-  <div class="search-bar">
-    <input class="ticker-input" id="ticker-input" placeholder="Enter ticker symbol (e.g. AAPL, NVDA, TSLA)" maxlength="10" />
-    <button class="analyze-btn" id="analyze-btn" onclick="analyze()">
-      Analyze <span>→</span>
-    </button>
-  </div>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="beta-pill"><div class="beta-dot"></div> Powered by Claude AI</div>
+    <h1 class="hero-title">Invest smarter with<br>institutional-quality analysis</h1>
+    <p class="hero-sub">LynkAI gives you the bull case, bear case, risk factors, and AI-driven insights that professional analysts use — for free.</p>
+    <a href="#analyzer" class="hero-cta">Analyze a stock →</a>
+  </section>
 
-  <div class="chips">
-    <span class="chips-label">Try:</span>
-    <div class="chip" onclick="quickPick('NVDA')">NVDA</div>
-    <div class="chip" onclick="quickPick('AAPL')">AAPL</div>
-    <div class="chip" onclick="quickPick('TSLA')">TSLA</div>
-    <div class="chip" onclick="quickPick('MSFT')">MSFT</div>
-    <div class="chip" onclick="quickPick('META')">META</div>
-    <div class="chip" onclick="quickPick('AMZN')">AMZN</div>
-    <div class="chip" onclick="quickPick('GOOGL')">GOOGL</div>
-  </div>
-
-  <!-- Loading -->
-  <div class="loading-wrap" id="loading-wrap">
-    <div class="loading-label">Analyzing <span id="loading-ticker" style="color:var(--indigo)"></span>...</div>
-    <div class="step" id="s1"><div class="step-dot">1</div><span>Searching news & market data</span></div>
-    <div class="step" id="s2"><div class="step-dot">2</div><span>Analyzing fundamentals & financials</span></div>
-    <div class="step" id="s3"><div class="step-dot">3</div><span>Building bull & bear case</span></div>
-    <div class="step" id="s4"><div class="step-dot">4</div><span>Generating investment brief</span></div>
-  </div>
-
-  <div id="err-area"></div>
-
-  <!-- Report -->
-  <div id="report">
-
-    <div class="card anim">
-      <div class="rpt-top">
-        <div>
-          <div class="rpt-name" id="r-name"></div>
-          <div class="rpt-meta" id="r-meta"></div>
-          <div class="rpt-summary" id="r-summary"></div>
+  <!-- FEATURES -->
+  <section class="features">
+    <div class="features-inner">
+      <h2 class="features-title">Everything you need to analyze stocks</h2>
+      <p class="features-sub">Professional-grade AI research designed for individual investors who want an edge.</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <div class="feature-name">Buy / Hold / Sell Rating</div>
+          <div class="feature-desc">Clear, actionable rating backed by AI analysis so you know exactly what to do.</div>
         </div>
-        <div id="r-verdict" class="verdict verdict-neutral">NEUTRAL</div>
+        <div class="feature-card">
+          <div class="feature-icon">⚖️</div>
+          <div class="feature-name">Balanced View</div>
+          <div class="feature-desc">Bull & bear case, momentum scores, and risk factors — never one-sided.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-name">AI-Powered Insights</div>
+          <div class="feature-desc">Intelligent analysis snapshots powered by Claude in seconds.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">☆</div>
+          <div class="feature-name">Watchlist</div>
+          <div class="feature-desc">Save stocks you're evaluating and track their ratings in one place.</div>
+        </div>
       </div>
     </div>
+  </section>
 
-    <div class="scores-grid anim">
-      <div class="score-tile">
-        <div class="score-label">Growth</div>
-        <div class="score-val" id="sv-growth">—</div>
-        <div class="score-track"><div class="score-bar" id="sb-growth" style="width:0%;background:#16a34a"></div></div>
-      </div>
-      <div class="score-tile">
-        <div class="score-label">Value</div>
-        <div class="score-val" id="sv-value">—</div>
-        <div class="score-track"><div class="score-bar" id="sb-value" style="width:0%;background:#635bff"></div></div>
-      </div>
-      <div class="score-tile">
-        <div class="score-label">Momentum</div>
-        <div class="score-val" id="sv-momentum">—</div>
-        <div class="score-track"><div class="score-bar" id="sb-momentum" style="width:0%;background:#d97706"></div></div>
-      </div>
-      <div class="score-tile">
-        <div class="score-label">Risk</div>
-        <div class="score-val" id="sv-risk">—</div>
-        <div class="score-track"><div class="score-bar" id="sb-risk" style="width:0%;background:#dc2626"></div></div>
-      </div>
+  <!-- ANALYZER -->
+  <section class="analyzer-section" id="analyzer">
+    <div class="section-label">Live Analyzer</div>
+    <h2 class="section-title">Get an instant investment brief</h2>
+    <p class="section-sub">Enter any stock ticker and get a full AI-generated research report in seconds.</p>
+
+    <div class="search-bar">
+      <input class="ticker-input" id="ticker-input" placeholder="Enter ticker symbol (e.g. AAPL, NVDA, TSLA)" maxlength="10" />
+      <button class="analyze-btn" id="analyze-btn" onclick="analyze()">Analyze →</button>
     </div>
 
-    <div class="two-col anim">
-      <div class="card bull">
-        <div class="case-head">↑ Bull Case</div>
-        <div class="case-body" id="r-bull"></div>
+    <div class="chips">
+      <span class="chips-label">Try:</span>
+      <div class="chip" onclick="quickPick('NVDA')">NVDA</div>
+      <div class="chip" onclick="quickPick('AAPL')">AAPL</div>
+      <div class="chip" onclick="quickPick('TSLA')">TSLA</div>
+      <div class="chip" onclick="quickPick('MSFT')">MSFT</div>
+      <div class="chip" onclick="quickPick('META')">META</div>
+      <div class="chip" onclick="quickPick('AMZN')">AMZN</div>
+      <div class="chip" onclick="quickPick('GOOGL')">GOOGL</div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-wrap" id="loading-wrap">
+      <div class="loading-label">Analyzing <span id="loading-ticker" style="color:var(--indigo)"></span>...</div>
+      <div class="step" id="s1"><div class="step-dot">1</div><span>Searching news & market data</span></div>
+      <div class="step" id="s2"><div class="step-dot">2</div><span>Analyzing fundamentals & financials</span></div>
+      <div class="step" id="s3"><div class="step-dot">3</div><span>Building bull & bear case</span></div>
+      <div class="step" id="s4"><div class="step-dot">4</div><span>Generating investment brief</span></div>
+    </div>
+
+    <div id="err-area"></div>
+
+    <!-- Report -->
+    <div id="report">
+
+      <!-- Rating banner (most prominent) -->
+      <div class="card anim">
+        <div class="rating-banner" id="rating-banner">
+          <div class="rating-left">
+            <div class="rating-badge" id="r-rating">—</div>
+            <div class="rating-reason" id="r-rating-reason"></div>
+          </div>
+          <button class="save-btn" id="save-btn" onclick="handleSave()">☆ Save to Watchlist</button>
+        </div>
       </div>
-      <div class="card bear">
-        <div class="case-head">↓ Bear Case</div>
-        <div class="case-body" id="r-bear"></div>
+
+      <!-- Company info -->
+      <div class="card anim">
+        <div class="rpt-top">
+          <div>
+            <div class="rpt-name" id="r-name"></div>
+            <div class="rpt-meta" id="r-meta"></div>
+            <div class="rpt-summary" id="r-summary"></div>
+          </div>
+          <div id="r-verdict" class="verdict verdict-neutral">NEUTRAL</div>
+        </div>
       </div>
-    </div>
 
-    <div class="card anim">
-      <div class="card-head">Key Catalysts to Watch</div>
-      <div class="card-body" id="r-catalysts"></div>
-    </div>
-
-    <div class="card anim">
-      <div class="card-head">Risk Factors</div>
-      <div class="card-body" id="r-risks"></div>
-    </div>
-
-    <div class="card anim">
-      <div class="card-head">Analyst Take</div>
-      <div class="card-body">
-        <div class="analyst-txt" id="r-analyst"></div>
+      <!-- Scores -->
+      <div class="scores-grid anim">
+        <div class="score-tile">
+          <div class="score-label">Growth</div>
+          <div class="score-val" id="sv-growth">—</div>
+          <div class="score-track"><div class="score-bar" id="sb-growth" style="width:0%;background:#16a34a"></div></div>
+        </div>
+        <div class="score-tile">
+          <div class="score-label">Value</div>
+          <div class="score-val" id="sv-value">—</div>
+          <div class="score-track"><div class="score-bar" id="sb-value" style="width:0%;background:#635bff"></div></div>
+        </div>
+        <div class="score-tile">
+          <div class="score-label">Momentum</div>
+          <div class="score-val" id="sv-momentum">—</div>
+          <div class="score-track"><div class="score-bar" id="sb-momentum" style="width:0%;background:#d97706"></div></div>
+        </div>
+        <div class="score-tile">
+          <div class="score-label">Risk</div>
+          <div class="score-val" id="sv-risk">—</div>
+          <div class="score-track"><div class="score-bar" id="sb-risk" style="width:0%;background:#dc2626"></div></div>
+        </div>
       </div>
-    </div>
 
-    <div class="rpt-footer anim">
-      <button class="reset-btn" onclick="reset()">← Analyze another stock</button>
-      <div class="disclaimer">For educational purposes only. Not financial advice.</div>
-    </div>
+      <!-- Bull / Bear -->
+      <div class="two-col anim">
+        <div class="card bull">
+          <div class="case-head">↑ Bull Case</div>
+          <div class="case-body" id="r-bull"></div>
+        </div>
+        <div class="card bear">
+          <div class="case-head">↓ Bear Case</div>
+          <div class="case-body" id="r-bear"></div>
+        </div>
+      </div>
 
+      <div class="card anim">
+        <div class="card-head">Key Catalysts to Watch</div>
+        <div class="card-body" id="r-catalysts"></div>
+      </div>
+
+      <div class="card anim">
+        <div class="card-head">Risk Factors</div>
+        <div class="card-body" id="r-risks"></div>
+      </div>
+
+      <div class="card anim">
+        <div class="card-head">Analyst Take</div>
+        <div class="card-body"><div class="analyst-txt" id="r-analyst"></div></div>
+      </div>
+
+      <div class="rpt-footer anim">
+        <button class="reset-btn" onclick="reset()">← Analyze another stock</button>
+        <div class="disclaimer">For educational purposes only. Not financial advice.</div>
+      </div>
+
+    </div>
+  </section>
+
+</div><!-- end home-view -->
+
+<!-- WATCHLIST VIEW -->
+<div id="watchlist-view">
+  <div class="watchlist-section">
+    <div class="wl-header">
+      <div>
+        <div class="wl-title">My Watchlist</div>
+        <div class="wl-count" id="wl-count"></div>
+      </div>
+      <button class="analyze-btn" onclick="showHome()" style="height:38px;padding:0 18px;font-size:13px;">+ Analyze New Stock</button>
+    </div>
+    <div class="wl-grid" id="wl-grid"></div>
   </div>
-</section>
+</div>
 
 <footer>
   <div>© 2025 LynkAI. Built with Claude AI.</div>
@@ -884,13 +844,122 @@
 </footer>
 
 <script>
-  const isDark = () => document.documentElement.classList.contains('dark');
+  // ── SUPABASE CONFIG ──────────────────────────────────────────────
+  // Replace these with your actual values from Supabase dashboard
+  const SUPABASE_URL = 'https://ucpopskzqftceyzpowre.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjcG9wc2t6cWZ0Y2V5enBvd3JlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxODUyMTUsImV4cCI6MjA5MDc2MTIxNX0.rSjQUVvpb4OPDnhQjWMA3GBumjFzm7FZiqDJORIfm5M';
+  // ─────────────────────────────────────────────────────────────────
 
-  function toggleTheme() {
-    document.documentElement.classList.toggle('dark');
-    document.getElementById('theme-btn').textContent = isDark() ? '☀' : '☾';
+  const { createClient } = supabase;
+  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+  let currentAnalysis = null;
+  let activeTab = 'signin';
+
+  // ── AUTH STATE ──
+  sb.auth.onAuthStateChange((event, session) => {
+    currentUser = session?.user || null;
+    updateNavForAuth();
+    if (currentUser) loadWatchlistBadge();
+  });
+
+  function updateNavForAuth() {
+    const loggedIn = !!currentUser;
+    document.getElementById('nav-signin-btn').style.display = loggedIn ? 'none' : '';
+    document.getElementById('nav-signup-btn').style.display = loggedIn ? 'none' : '';
+    document.getElementById('nav-user').style.display = loggedIn ? 'flex' : 'none';
+    document.getElementById('nav-watchlist-btn').style.display = loggedIn ? 'flex' : 'none';
+
+    if (loggedIn) {
+      const email = currentUser.email;
+      document.getElementById('user-email-short').textContent = email.split('@')[0];
+      document.getElementById('user-avatar').textContent = email[0].toUpperCase();
+    }
   }
 
+  // ── AUTH MODAL ──
+  function openAuth(tab) {
+    document.getElementById('auth-modal').classList.add('open');
+    switchTab(tab);
+  }
+
+  function closeAuth() {
+    document.getElementById('auth-modal').classList.remove('open');
+    document.getElementById('auth-error').style.display = 'none';
+    document.getElementById('auth-email').value = '';
+    document.getElementById('auth-password').value = '';
+  }
+
+  function switchTab(tab) {
+    activeTab = tab;
+    document.getElementById('tab-signin').className = 'modal-tab' + (tab === 'signin' ? ' active' : '');
+    document.getElementById('tab-signup').className = 'modal-tab' + (tab === 'signup' ? ' active' : '');
+    document.getElementById('auth-submit-btn').textContent = tab === 'signin' ? 'Sign in' : 'Create account';
+    document.getElementById('modal-title').textContent = tab === 'signin' ? 'Welcome back' : 'Create your account';
+    document.getElementById('modal-sub').textContent = tab === 'signin'
+      ? 'Sign in to save stocks to your watchlist'
+      : 'Sign up free to save and track your stocks';
+    document.getElementById('auth-error').style.display = 'none';
+  }
+
+  async function submitAuth() {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const btn = document.getElementById('auth-submit-btn');
+    const errEl = document.getElementById('auth-error');
+
+    if (!email || !password) { showAuthError('Please fill in all fields.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = activeTab === 'signin' ? 'Signing in...' : 'Creating account...';
+    errEl.style.display = 'none';
+
+    try {
+      let result;
+      if (activeTab === 'signin') {
+        result = await sb.auth.signInWithPassword({ email, password });
+      } else {
+        result = await sb.auth.signUp({ email, password });
+      }
+
+      if (result.error) throw result.error;
+
+      closeAuth();
+      if (currentAnalysis) saveToWatchlist();
+
+    } catch (e) {
+      showAuthError(e.message || 'Authentication failed. Please try again.');
+    }
+
+    btn.disabled = false;
+    btn.textContent = activeTab === 'signin' ? 'Sign in' : 'Create account';
+  }
+
+  function showAuthError(msg) {
+    const el = document.getElementById('auth-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  async function signOut() {
+    await sb.auth.signOut();
+    showHome();
+  }
+
+  // ── VIEWS ──
+  function showHome() {
+    document.getElementById('home-view').style.display = '';
+    document.getElementById('watchlist-view').style.display = 'none';
+  }
+
+  function showWatchlist() {
+    document.getElementById('home-view').style.display = 'none';
+    document.getElementById('watchlist-view').style.display = '';
+    loadWatchlist();
+  }
+
+  // ── ANALYZER ──
   function quickPick(t) {
     document.getElementById('ticker-input').value = t;
     analyze();
@@ -929,13 +998,23 @@
         body: JSON.stringify({ ticker }),
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Analysis failed');
-      }
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Analysis failed'); }
 
       const d = await res.json();
+      currentAnalysis = d;
 
+      // Rating banner
+      const ratingEl = document.getElementById('r-rating');
+      ratingEl.textContent = d.rating;
+      ratingEl.className = `rating-badge rating-${d.rating.toLowerCase()}`;
+      document.getElementById('r-rating-reason').textContent = d.rating_reason || '';
+
+      // Reset save button
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.className = 'save-btn';
+      saveBtn.textContent = '☆ Save to Watchlist';
+
+      // Company info
       document.getElementById('r-name').textContent = d.name;
       document.getElementById('r-meta').textContent = `${d.ticker} · ${d.sector}`;
       document.getElementById('r-summary').textContent = d.summary;
@@ -944,6 +1023,7 @@
       vb.textContent = d.verdict;
       vb.className = `verdict verdict-${d.verdict.toLowerCase()}`;
 
+      // Scores
       ['growth','value','momentum','risk'].forEach(k => {
         const v = d.scores[k];
         document.getElementById(`sv-${k}`).textContent = `${v}/10`;
@@ -973,7 +1053,7 @@
     } catch (e) {
       lw.style.display = 'none';
       document.getElementById('err-area').innerHTML =
-        `<div class="error-box" style="margin-top:16px">Error: ${e.message}</div>`;
+        `<div class="error-box">Error: ${e.message}</div>`;
     }
 
     document.getElementById('analyze-btn').disabled = false;
@@ -982,12 +1062,145 @@
   function reset() {
     document.getElementById('report').style.display = 'none';
     document.getElementById('ticker-input').value = '';
+    currentAnalysis = null;
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setTimeout(() => document.getElementById('ticker-input').focus(), 500);
   }
 
+  // ── WATCHLIST ──
+  function handleSave() {
+    if (!currentUser) {
+      openAuth('signup');
+      return;
+    }
+    saveToWatchlist();
+  }
+
+  async function saveToWatchlist() {
+    if (!currentAnalysis || !currentUser) return;
+
+    const d = currentAnalysis;
+    const { error } = await sb.from('watchlist').insert({
+      user_id: currentUser.id,
+      ticker: d.ticker,
+      company_name: d.name,
+      sector: d.sector,
+      verdict: d.verdict,
+      rating: d.rating,
+      growth_score: d.scores.growth,
+      value_score: d.scores.value,
+      momentum_score: d.scores.momentum,
+      risk_score: d.scores.risk,
+      summary: d.summary,
+    });
+
+    if (error) {
+      alert('Failed to save. Please try again.');
+      return;
+    }
+
+    const btn = document.getElementById('save-btn');
+    btn.className = 'save-btn saved';
+    btn.textContent = '★ Saved to Watchlist';
+    loadWatchlistBadge();
+  }
+
+  async function loadWatchlistBadge() {
+    if (!currentUser) return;
+    const { data } = await sb.from('watchlist').select('id').eq('user_id', currentUser.id);
+    const count = data?.length || 0;
+    document.getElementById('wl-badge').textContent = count > 0 ? `(${count})` : '';
+  }
+
+  async function loadWatchlist() {
+    const grid = document.getElementById('wl-grid');
+    grid.innerHTML = '<div style="color:var(--ink3);font-size:13px;padding:16px 0">Loading...</div>';
+
+    const { data, error } = await sb.from('watchlist')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('saved_at', { ascending: false });
+
+    if (error || !data) {
+      grid.innerHTML = '<div class="error-box">Failed to load watchlist.</div>';
+      return;
+    }
+
+    document.getElementById('wl-count').textContent = `${data.length} stock${data.length !== 1 ? 's' : ''} saved`;
+
+    if (data.length === 0) {
+      grid.innerHTML = `
+        <div class="wl-empty" style="grid-column:1/-1">
+          <div class="wl-empty-icon">☆</div>
+          <div class="wl-empty-title">Your watchlist is empty</div>
+          <div>Analyze a stock and save it to start tracking.</div>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = data.map(s => {
+      const date = new Date(s.saved_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const rating = (s.rating || 'HOLD').toLowerCase();
+      const ratingClass = `wl-${rating}`;
+
+      const scores = [
+        { label: 'Growth', val: s.growth_score, color: '#16a34a' },
+        { label: 'Value', val: s.value_score, color: '#635bff' },
+        { label: 'Momentum', val: s.momentum_score, color: '#d97706' },
+        { label: 'Risk', val: s.risk_score, color: '#dc2626' },
+      ];
+
+      return `
+        <div class="wl-card" id="wl-card-${s.id}">
+          <div class="wl-card-top">
+            <div>
+              <div class="wl-ticker">${s.ticker}</div>
+              <div class="wl-name">${s.company_name}</div>
+            </div>
+            <div class="wl-rating ${ratingClass}">${s.rating}</div>
+          </div>
+          <div class="wl-scores">
+            ${scores.map(sc => `
+              <div class="wl-score">
+                <div class="wl-score-label">${sc.label}</div>
+                <div class="wl-score-row">
+                  <div class="wl-score-val">${sc.val}/10</div>
+                  <div class="wl-track"><div class="wl-fill" style="width:${sc.val*10}%;background:${sc.color}"></div></div>
+                </div>
+              </div>`).join('')}
+          </div>
+          <div class="wl-card-footer">
+            <div class="wl-date">Saved ${date}</div>
+            <div class="wl-actions">
+              <button class="wl-btn wl-analyze-btn" onclick="reanalyze('${s.ticker}')">Re-analyze</button>
+              <button class="wl-btn wl-remove-btn" onclick="removeFromWatchlist('${s.id}')">Remove</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function removeFromWatchlist(id) {
+    await sb.from('watchlist').delete().eq('id', id).eq('user_id', currentUser.id);
+    document.getElementById(`wl-card-${id}`)?.remove();
+    const remaining = document.querySelectorAll('.wl-card').length;
+    document.getElementById('wl-count').textContent = `${remaining} stock${remaining !== 1 ? 's' : ''} saved`;
+    document.getElementById('wl-badge').textContent = remaining > 0 ? `(${remaining})` : '';
+    if (remaining === 0) loadWatchlist();
+  }
+
+  function reanalyze(ticker) {
+    showHome();
+    document.getElementById('ticker-input').value = ticker;
+    setTimeout(() => analyze(), 300);
+  }
+
   document.getElementById('ticker-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') analyze();
+  });
+
+  document.getElementById('auth-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeAuth();
   });
 </script>
 </body>

@@ -23,6 +23,8 @@ Respond ONLY with a valid JSON object — no markdown, no preamble, exactly this
   "ticker": "TICKER",
   "sector": "Sector / Industry",
   "verdict": "BULLISH" | "BEARISH" | "NEUTRAL",
+  "rating": "BUY" | "HOLD" | "SELL",
+  "rating_reason": "One sentence explaining the rating",
   "summary": "2-sentence executive summary of the company and current investment thesis",
   "scores": {
     "growth": 7,
@@ -53,7 +55,9 @@ Respond ONLY with a valid JSON object — no markdown, no preamble, exactly this
   ],
   "analyst": "2-3 sentence overall analyst take including key metrics like P/E, revenue growth, margin trends, and a closing view."
 }
-All scores are 1-10. Risk score: 10 = very high risk. Be accurate and specific to this company.`;
+All scores are 1-10. Risk score: 10 = very high risk.
+Rating guide: BUY = strong conviction to accumulate, HOLD = wait for better entry or monitor, SELL = reduce or exit position.
+Be accurate and specific to this company.`;
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -65,7 +69,7 @@ All scores are 1-10. Risk score: 10 = very high risk. Be accurate and specific t
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        max_tokens: 1200,
         system,
         messages: [{ role: "user", content: `Analyze: ${ticker.toUpperCase()}` }],
       }),
