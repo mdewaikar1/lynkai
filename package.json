@@ -1,0 +1,12 @@
+{
+  "name": "lynkai",
+  "version": "1.0.0",
+  "description": "AI-powered stock analysis agent built with Claude",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
